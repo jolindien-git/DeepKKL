@@ -2,7 +2,6 @@ import os
 import sys
 import argparse
 import torch
-import pandas as pd
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -89,12 +88,17 @@ if __name__ == "__main__":
     print("FINAL RESULTS")
     print("="*50)
     
-    df_results = pd.DataFrame(results).set_index('Model')
-    print(df_results.to_string(float_format=lambda x: f"{x:.4f}"))
+    try:
+        import pandas as pd
+        df_results = pd.DataFrame(results).set_index('Model')
+        print(df_results.to_string(float_format=lambda x: f"{x:.4f}"))
     
-    csv_path = f"metrics_{args.dataset}_noise{args.noise_std}.csv"
-    df_results.to_csv(csv_path)
-    print(f"\nResults saved to {csv_path}")
+        csv_path = f"metrics_{args.dataset}_noise{args.noise_std}.csv"
+        df_results.to_csv(csv_path)
+        print(f"\nResults saved to {csv_path}")
+    except:
+        print("pandas not found")
+        print(results)
 
     print("\nGenerating comparison plot...")
     plot_model_comparison(

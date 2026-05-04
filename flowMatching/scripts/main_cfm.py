@@ -111,7 +111,7 @@ if __name__ == "__main__":
     print(f"Coverage    : {c_cfm:.4f}")
     print(f"Inference Time       : {inf_time:.3f} s")
 
-    #%% Plot 1: Multimodal Tracking
+    #%% Plot 1: Multimodal Observer
     tracking_path = os.path.join("trained_models", args.dataset, f"{args.name}_track.png")
     plot_multimodal_tracking(
         ts=ts.numpy(), 

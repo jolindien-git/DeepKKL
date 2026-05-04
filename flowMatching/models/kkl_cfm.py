@@ -44,41 +44,68 @@ class KKL_CFM(nn.Module):
         loss = torch.mean((v_pred - v_target)**2)
         return loss
 
+    import torch
+
     @torch.no_grad()
-    def sample(self, z, n_particles=1, n_steps=20):
+    def sample(self, z, n_particles=1, n_steps=20, chunk_size=20):
         """
         Generates physical states x by solving the learned ODE from tau=0 to tau=1.
+        Uses chunking along the particle dimension to prevent GPU VRAM bottlenecking.
         
         Args:
             z: Latent condition trajectory (B, T, z_dim)
             n_particles (M): Number of alternative trajectories to generate per batch
-            n_steps: Number of integration steps (Euler method)
+            n_steps: Number of integration steps (RK4 method)
+            chunk_size: Number of particles to process simultaneously.
+            !!! in the case you have memory problems => decrease chunk_size !!!
         Returns:
-            x1: Generated physical states (B, M, T, x_dim)
+            x: Generated physical states (B, M, T, x_dim)
         """
         B, T_len, z_dim = z.shape
         device = z.device
         
-        # 1. Expand z to match the number of particles M
-        # From (B, T, z_dim) -> (B, M, T, z_dim)
-        z_expanded = z.unsqueeze(1).expand(B, n_particles, T_len, z_dim)
-        
-        # 2. Initialize x0 ~ N(0, I) for all particles
-        x = torch.randn(B, n_particles, T_len, self.x_dim, device=device)
-
-        # 3. ODE Integration (Euler method) along the flow time tau
+        # Pre-compute integration steps
         dt = 1.0 / n_steps
         taus = torch.linspace(0, 1.0 - dt, n_steps, device=device)
-
-        for tau in taus:
-            # v_network takes (tau, x, z)
-            # tau is a scalar here, our TimeConditionedMLP handles the broadcasting
-            v = self.v_network(tau, x, z_expanded)
+    
+        # 1. Expand z to match the total number of particles M
+        # Shape: (B, M, T, z_dim)
+        z_expanded = z.unsqueeze(1).expand(B, n_particles, T_len, z_dim)
+    
+        all_x = []
+    
+        # 2. Process by chunks along the particle dimension (dim=1)
+        for i in range(0, n_particles, chunk_size):
+            # Extract current chunk of particles
+            # Shape: (B, current_chunk_size, T, z_dim)
+            z_chunk = z_expanded[:, i : i + chunk_size]
+            current_chunk_size = z_chunk.shape[1]
             
-            # Euler step
-            x = x + dt * v
+            # Initialize x0 ~ N(0, I) for this chunk
+            x = torch.randn(B, current_chunk_size, T_len, self.x_dim, device=device)
+    
+            # ODE Integration (RK4 method) along the flow time tau
+            for tau in taus:
+                # k1
+                k1 = self.v_network(tau, x, z_chunk)
+                
+                # k2 (evaluate at tau + dt/2)
+                k2 = self.v_network(tau + dt / 2.0, x + (dt / 2.0) * k1, z_chunk)
+                
+                # k3 (evaluate at tau + dt/2)
+                k3 = self.v_network(tau + dt / 2.0, x + (dt / 2.0) * k2, z_chunk)
+                
+                # k4 (evaluate at tau + dt)
+                k4 = self.v_network(tau + dt, x + dt * k3, z_chunk)
+                
+                # RK4 step update
+                x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+                
+            all_x.append(x)
+    
+        # 3. Recombine chunks along the particle dimension (dim=1)
+        return torch.cat(all_x, dim=1)
 
-        return x
     
     def compute_density_map(self,
                             z_cond,

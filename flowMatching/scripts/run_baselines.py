@@ -127,7 +127,7 @@ if __name__ == "__main__":
     xs_batch = torch.tensor(test_dataset.xs, dtype=torch.float32, device=device)
     true_modes = test_dataset.get_true_modes(xs_batch)
 
-    # 2. Train / BiModal Baseline
+    # 2. Init / Train / Infer
     preds, inf_time, observer = run_baseline(
         args.baseline, train_xs, train_ys, train_dataset, test_ys, args, device
     )
@@ -136,7 +136,8 @@ if __name__ == "__main__":
     precision, coverage = compute_mhd_metrics(preds, true_modes, transient_len=args.traj_len // 10)
     print("\n--- Final Results ---")
     print(f"Precision (Validity) : {precision:.4f}")
-    print(f"Coverage (Recall)    : {coverage:.4f}")
+    print(f"Coverage (mode collapse)    : {coverage:.4f}")
+    print(f"Inf. Time (s)    : {inf_time:.3f}")
 
     # 4. Plot ?
     if args.plot:

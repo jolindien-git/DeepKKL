@@ -15,7 +15,7 @@ class KKLCFMObserver(BaseMultimodalObserver):
     Uses Conditional Flow Matching to learn the multi-valued inverse mapping T^{-1}(z).
     Generates a distribution of possible physical states x(t).
     """
-    def __init__(self, dataset, normalizer, z_dim=6, hidden_dim=128, n_layers=4, n_modes=2, n_steps=20, n_particles=50, device='cpu'):
+    def __init__(self, dataset, normalizer, z_dim=6, hidden_dim=128, n_layers=4, n_modes=2, n_steps=5, n_particles=50, device='cpu'):
         super().__init__(dataset.x_dim, dataset.y_dim, dataset.dt, device)
         
         self.normalizer = normalizer
@@ -82,28 +82,34 @@ class KKLCFMObserver(BaseMultimodalObserver):
                 
         print("--- Training Complete ---")
 
+    @torch.no_grad()
     def forward(self, ys_batch):
         """
         Inference: Generates particles, and extracts distinct modes (tracking).
         Returns:
             tensor of shape (B, n_modes, T, x_dim).
         """
+        # import time; tic = time.time() # test profiling
         self.cfm.eval()
-        with torch.no_grad():
-            zs = self.latent_dyn.compute_z_fast(ys_batch)
-            
-            # Generate N particles
-            xs_norm_pred = self.cfm.sample(zs, n_particles=self.n_particles, n_steps=self.n_steps)
-            xs_pred = self.normalizer.unnormalize(xs_norm_pred) # Shape: (B, N, T, x_dim)
-            
-            # Rearrange dimensions to match the tracking utility signature
-            xs_pred_aligned = xs_pred.permute(0, 2, 1, 3) # -> (B, T, N, D)
-            
-            # Apply tracking
-            xs_tracked = track_modes_cfm(
-                p_hist=xs_pred_aligned, 
-                n_modes=self.n_modes
-            ) 
+        
+        zs = self.latent_dyn.compute_z_fast(ys_batch)
+        # torch.cuda.synchronize(); print('zs', time.time() - tic)
+        
+        # -- Generate N particles
+        xs_norm_pred = self.cfm.sample(zs, n_particles=self.n_particles, n_steps=self.n_steps)
+        # torch.cuda.synchronize(); print('cfm.sample', time.time() - tic)
+        
+        xs_pred = self.normalizer.unnormalize(xs_norm_pred) # Shape: (B, N, T, x_dim)
+        
+        # -- Rearrange dimensions to match the tracking utility signature
+        xs_pred_aligned = xs_pred.permute(0, 2, 1, 3) # -> (B, T, N, D)
+        
+        # -- Apply tracking
+        xs_tracked = track_modes_cfm(
+            p_hist=xs_pred_aligned, 
+            n_modes=self.n_modes
+        )
+        # print('track', time.time() - tic)
             
         return xs_tracked # (B, n_modes, T, x_dim)
     
