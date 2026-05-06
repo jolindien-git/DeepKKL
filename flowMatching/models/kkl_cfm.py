@@ -83,30 +83,26 @@ class KKL_CFM(nn.Module):
             
             # Initialize x0 ~ N(0, I) for this chunk
             x = torch.randn(B, current_chunk_size, T_len, self.x_dim, device=device)
-    
-            # ODE Integration (RK4 method) along the flow time tau
+            
+            method = 'euler'
+            # ODE Integration along the flow time tau
             for tau in taus:
-                # k1
-                k1 = self.v_network(tau, x, z_chunk)
-                
-                # k2 (evaluate at tau + dt/2)
-                k2 = self.v_network(tau + dt / 2.0, x + (dt / 2.0) * k1, z_chunk)
-                
-                # k3 (evaluate at tau + dt/2)
-                k3 = self.v_network(tau + dt / 2.0, x + (dt / 2.0) * k2, z_chunk)
-                
-                # k4 (evaluate at tau + dt)
-                k4 = self.v_network(tau + dt, x + dt * k3, z_chunk)
-                
-                # RK4 step update
-                x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+                if method == 'rk4':
+                    k1 = self.v_network(tau, x, z_chunk)
+                    k2 = self.v_network(tau + dt / 2.0, x + (dt / 2.0) * k1, z_chunk)
+                    k3 = self.v_network(tau + dt / 2.0, x + (dt / 2.0) * k2, z_chunk)
+                    k4 = self.v_network(tau + dt, x + dt * k3, z_chunk)
+                    x = x + (dt / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4)
+                else:
+                    v = self.v_network(tau, x, z_chunk)
+                    x = x + dt * v
                 
             all_x.append(x)
     
         # 3. Recombine chunks along the particle dimension (dim=1)
         return torch.cat(all_x, dim=1)
 
-    
+
     def compute_density_map(self,
                             z_cond,
                             x_min, x_max,

@@ -15,7 +15,7 @@ class KKLCFMObserver(BaseMultimodalObserver):
     Uses Conditional Flow Matching to learn the multi-valued inverse mapping T^{-1}(z).
     Generates a distribution of possible physical states x(t).
     """
-    def __init__(self, dataset, normalizer, z_dim=6, hidden_dim=128, n_layers=4, n_modes=2, n_steps=5, n_particles=50, device='cpu'):
+    def __init__(self, dataset, normalizer, z_dim=6, hidden_dim=128, n_layers=4, n_modes=2, n_steps=20, n_particles=50, device='cpu'):
         super().__init__(dataset.x_dim, dataset.y_dim, dataset.dt, device)
         
         self.normalizer = normalizer
