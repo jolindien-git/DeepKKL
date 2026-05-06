@@ -95,10 +95,10 @@ for n_particles in N_PARTICLES_CFM:
           )
 
 # %% plot
-plt.plot(N_PARTICLES_PF, pf_prec, 'r*-', label='BPF Prec.')
-plt.plot(N_PARTICLES_PF, pf_cov, 'r*--', label='BPF Cov.')
-plt.plot(N_PARTICLES_CFM, cfm_prec, 'b*-', label='KKL-CFM Prec.')
-plt.plot(N_PARTICLES_CFM, cfm_cov, 'b*--', label='KKL-CFM Cov.')
+plt.semilogx(N_PARTICLES_PF, pf_prec, 'r*-', label='BPF Prec.')
+plt.semilogx(N_PARTICLES_PF, pf_cov, 'r*--', label='BPF Cov.')
+plt.semilogx(N_PARTICLES_CFM, cfm_prec, 'b*-', label='KKL-CFM Prec.')
+plt.semilogx(N_PARTICLES_CFM, cfm_cov, 'b*--', label='KKL-CFM Cov.')
 plt.legend()
 plt.xlabel("N particles")
 plt.show()
