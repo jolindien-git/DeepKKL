@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 from scipy import signal
 
-def get_bessel_dynamics(z_dim, dt, noise_std=0.1, base_bandwidth=5.0, device='cpu'):
+def get_bessel_dynamics(z_dim, dt, noise_std=0.1, base_bandwidth=5.0, device='cpu', verbose=False):
     '''
     Compute A and B matrices, to obtain the Bessel filter
         z+ = A z + B u      (discrete-time)
@@ -14,8 +14,9 @@ def get_bessel_dynamics(z_dim, dt, noise_std=0.1, base_bandwidth=5.0, device='cp
     
     real_poles = poles[np.abs(poles.imag) < 1e-6].real
     complex_poles = poles[np.abs(poles.imag) >= 1e-6]
-    print("Bessel filter, real poles", real_poles)
-    print("Bessel filter, complex poles", complex_poles)
+    if verbose:
+        print("Bessel filter, real poles", real_poles)
+        print("Bessel filter, complex poles", complex_poles)
     
     A_c = np.zeros((z_dim, z_dim))
     current_idx = 0

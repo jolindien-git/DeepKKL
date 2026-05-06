@@ -34,6 +34,10 @@ def parse_args():
     return parser.parse_args()
 
 
+def get_model_path(dataset, name):
+    return os.path.join("trained_models", dataset, f"{name}.pth")
+
+
 if __name__ == "__main__":
     
     args = parse_args()
@@ -72,7 +76,7 @@ if __name__ == "__main__":
     
     
     #%% Train
-    model_path = os.path.join("trained_models", args.dataset, f"{args.name}.pth")
+    model_path = get_model_path(args.dataset, args.name)
     
     if args.epochs == 0 and os.path.exists(model_path):
         print("Loading pre-trained model...")
