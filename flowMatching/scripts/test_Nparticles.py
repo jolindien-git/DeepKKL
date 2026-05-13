@@ -1,6 +1,11 @@
+import os
+import sys
 import time
 import torch
 import matplotlib.pyplot as plt
+
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data.systems import datasets
 from utils.base import set_seed
@@ -67,7 +72,7 @@ normalizer = Normalizer(train_xs)
 observer = KKLCFMObserver(
     dataset=train_dataset, 
     normalizer=normalizer, 
-    z_dim=args.z_dim, 
+    z_dim=12 if args.dataset == 'VDP2' else 6,# args.z_dim, 
     hidden_dim=128,
     n_layers=4,
     n_modes=train_dataset.n_modes,
