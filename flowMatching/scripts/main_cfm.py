@@ -97,7 +97,7 @@ if __name__ == "__main__":
     
     
     #%% POST-TRAINING EVALUATION
-    print("\n=== Running Post-Training Evaluation ===")
+    print(f"\n=== Running Post-Training Evaluation on {args.n_trajs_test} trajectories ===")
     test_dataset = dataset_cls(n_trajs=args.n_trajs_test, traj_len=args.traj_len, noise_std=args.noise_std)
     ts = torch.tensor(test_dataset.ts[0], dtype=torch.float32)
     test_ys = torch.tensor(test_dataset.ys, dtype=torch.float32, device=device)

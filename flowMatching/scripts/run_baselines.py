@@ -90,8 +90,16 @@ def run_baseline(baseline, train_xs, train_ys, train_dataset, test_ys, args, dev
             n_modes=train_dataset.n_modes,
             device=device
         )
-        set_seed(args.seed)
-        observer.fit(train_xs, train_ys, epochs=args.epochs, batch_size=128*4, lr=2e-3, transient_len=transient_len)
+        try:
+            # -- load model
+            from main_cfm import get_model_path
+            name = "noisy" if args.noise_std > 0 else "noiseless"
+            model_path = get_model_path(args.dataset, name)
+            observer.load_model(model_path)
+            print(f"Pre-trained model {model_path} loaded.")
+        except:
+            set_seed(args.seed)
+            observer.fit(train_xs, train_ys, epochs=args.epochs, batch_size=128*4, lr=2e-3, transient_len=transient_len)
         
     else:
         raise ValueError(f"Unknown baseline: {baseline}")

@@ -19,14 +19,21 @@ class KKLCFMObserver(BaseMultimodalObserver):
         super().__init__(dataset.x_dim, dataset.y_dim, dataset.dt, device)
         
         self.normalizer = normalizer
+        self.z_dim = z_dim
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
         self.n_modes = n_modes 
         self.n_steps = n_steps
+        self.n_particles = n_particles
         
+        self._init_networks(z_dim, hidden_dim, n_layers, device)
+    
+    
+    def _init_networks(self, z_dim, hidden_dim, n_layers, device):
         self.latent_dyn = KKL_Latent_Dynamics(self.y_dim, z_dim, self.dt, device)
         v_network = TimeConditionedMLP(self.x_dim, z_dim, hidden_dim, n_layers).to(device)
         self.cfm = KKL_CFM(v_network).to(device)
         
-        self.n_particles = n_particles
 
     def fit(self, train_xs, train_ys, epochs=100, batch_size=64*5, lr=1e-3, transient_len=50, transient_skip=True):
         """
@@ -120,7 +127,8 @@ class KKLCFMObserver(BaseMultimodalObserver):
         torch.save({
             'v_network_state_dict': self.cfm.v_network.state_dict(),
             'normalizer_mean': self.normalizer.mean,
-            'normalizer_std': self.normalizer.std
+            'normalizer_std': self.normalizer.std,
+            'z_dim': self.z_dim,
         }, path)
         print(f"[*] KKL-CFM saved to {path}")
 
@@ -130,6 +138,7 @@ class KKLCFMObserver(BaseMultimodalObserver):
             raise FileNotFoundError(f"No saved model found at {path}")
             
         checkpoint = torch.load(path, map_location=self.device)
+        self._init_networks(checkpoint['z_dim'], self.hidden_dim, self.n_layers, self.device)
         self.cfm.v_network.load_state_dict(checkpoint['v_network_state_dict'])
         
         # Restore normalizer state exactly as it was during training
