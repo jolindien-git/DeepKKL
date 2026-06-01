@@ -46,7 +46,8 @@ def plot_multimodal_tracking(ts, ys, xs_true_modes, preds, batch_idx=0, save_pat
         for c in range(C_true):
             ax.plot(t, x_true_b[c, :, i], linewidth=3, color=colors[3], 
                     label='$x_%i$'%(i+1,) if c==0 else "")
-            
+        ax.set_ylim(x_true_b[c, :, i].min(), x_true_b[c, :, i].max())
+        
         # Predictions (Dashed lines)
         for m in range(M_pred):
             ax.plot(t, preds_b[m, :, i], '--', linewidth=2, color=colors[5+m], 

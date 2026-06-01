@@ -148,7 +148,62 @@ class VanDerPol(KKL_Dataset):
     def get_y(x):
         return x[..., :1] 
     
+
+class DoublePendulum(KKL_Dataset):
+    x_dim, u_dim = 4, 0
+    y_dim = 1
+    x0_high = np.float32([np.pi, np.pi, 2.0, 2.0])
+    x0_low = -x0_high
+    dt = 0.01
+    name = "Double Pendulum"
+
+    # --- Physical Parameters
+    m1 = 1. #2.
+    m2 = 1. #2.
+    l1 = 1. #1.5
+    l2 = 1. #1.5
+    g = 9.81
+    
+    @staticmethod
+    def get_derivs(x, u=None):
+        dxdt = 0 * x
+        th1, th2 = x[..., 0], x[..., 1]
+        dth1, dth2 = x[..., 2], x[..., 3]
         
+        m1 = DoublePendulum.m1
+        m2 = DoublePendulum.m2
+        l1 = DoublePendulum.l1
+        l2 = DoublePendulum.l2
+        g = DoublePendulum.g
+        
+        delta = th1 - th2
+        
+        den_base = 2 * m1 + m2 - m2 * np.cos(2 * delta)
+        den1 = l1 * den_base
+        den2 = l2 * den_base
+        
+        dxdt[..., 0] = dth1
+        dxdt[..., 1] = dth2
+        
+        num1 = (-g * (2 * m1 + m2) * np.sin(th1) 
+                - m2 * g * np.sin(th1 - 2 * th2) 
+                - 2 * np.sin(delta) * m2 * (dth2**2 * l2 + dth1**2 * l1 * np.cos(delta)))
+        dxdt[..., 2] = num1 / den1
+        
+        num2 = (2 * np.sin(delta) * (dth1**2 * l1 * (m1 + m2) 
+                + g * (m1 + m2) * np.cos(th1) 
+                + dth2**2 * l2 * m2 * np.cos(delta)))
+        dxdt[..., 3] = num2 / den2
+        
+        return dxdt
+    
+    @staticmethod
+    def get_y(x):
+        # th1 = x[..., 0]
+        # return np.stack([np.cos(th1), np.sin(th1)], axis=-1)
+        return x[..., :1] 
+
+
 class Rossler(KKL_Dataset):
     x_dim, y_dim, u_dim = 3, 1, 0
     x0_high = np.float32([1] * 3)
@@ -335,5 +390,6 @@ datasets = {
     'CDC19': LinearDyn_PolynomOut,
     'Duffing': Duffing_Indistinguishable,
     'BiModal': BiModal,
-    'VDP2': QuadModeCoupledVDP
+    'VDP2': QuadModeCoupledVDP,
+    'Double' : DoublePendulum,
 }

@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument('--n_particles', type=int, default=100, help="Partciles Number for eval.")
     parser.add_argument('--name', type=str, default='temp')
     # -- training
+    parser.add_argument('--warm', action="store_true")
     parser.add_argument('--epochs', type=int, default=20)
     parser.add_argument('--batch_size', type=int, default=128*4)
     parser.add_argument('--lr', type=float, default=2e-3)
@@ -78,16 +79,15 @@ if __name__ == "__main__":
     #%% Train
     model_path = get_model_path(args.dataset, args.name)
     
-    if args.epochs == 0 and os.path.exists(model_path):
+    if (args.warm or args.epochs == 0) and os.path.exists(model_path):
         print("Loading pre-trained model...")
         observer.load_model(model_path)
-    else:
+    if args.epochs > 0:
         set_seed(args.seed)
-        epochs = max(1, args.epochs)
-        print(f"=== Training KKL-CFM on {args.dataset} ({device}) for {epochs} epochs===")
+        print(f"=== Training KKL-CFM on {args.dataset} ({device}) for {args.epochs} epochs===")
         observer.fit(
             train_xs, train_ys, 
-            epochs=epochs, 
+            epochs=args.epochs, 
             batch_size=args.batch_size, 
             lr=args.lr,
             transient_len=args.traj_len // 10
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         ys=test_ys.cpu().numpy(), 
         xs_true_modes=true_modes.cpu().numpy(), 
         preds=preds_cfm.cpu().numpy(), 
-        batch_idx=1,
+        batch_idx=0,
         save_path=tracking_path
     )
     
